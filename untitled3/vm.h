@@ -87,7 +87,6 @@ typedef struct sstat {
     Value arg1;
     Value arg2;
     Value arg3;
-    struct  sstat *next;
 
 }Stat;
 typedef Stat* Pstat;

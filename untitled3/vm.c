@@ -4,15 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-int const MAX_OBJECTS=1000000;
+#define MAX_OBJECTS 1000000
 int const SIZE_INT=4;
 int const SIZE_REAL=8;
 int const SIZE_STRING=4;
 Pstat prog;
 int pc;
 Object *vars;
-Object *ostack;
-Activation_record *astack;
+Object ostack [MAX_OBJECTS];
+Activation_record astack[MAX_OBJECTS];
 char* *istack;
 int vp=0;
 int op;
@@ -61,8 +61,8 @@ void read_simple(int oid , char* format) {
     }
     if (strcmp(format, "s")) { // non basta cosi perchè è un puntatore, va salvato in un altro modo
         char *s;
-        scanf("%s",&s );
-        *vars[oid].addr=*s;
+        scanf("%s",s );
+        vars[oid].addr=s;
     }
 }
 void read_complex(int oid , char* format) {
@@ -71,30 +71,39 @@ void read_complex(int oid , char* format) {
         //va modificata la stringa per rimuovere le virgole in piu bisogna capire se prendere come char
         //un numero e poi castarlo basta oppure devo fare atoi e poi tornare a trasformalro in car
         char *s;
-        scanf("%s",&s );
-        *vars[oid].addr=*s;
+        scanf("%s",s );
+        vars[oid].addr=s;
     }
     //array di record
     else if (format[0]=='['&& format[1]=='{') {
         //
         //
         char *s;
-        scanf("%s",&s );
-        *vars[oid].addr=*s;
+        scanf("%s",s );
+        vars[oid].addr=s;
     }
     //record normali
     else {
         char *s;
-        scanf("%s",&s );
-        *vars[oid].addr=*s;
+        scanf("%s",s );
+        vars[oid].addr=s;
     }
 
 }
+
+/**
+ * non ricordo bene ma mi sembra che serva a estrarre il campo di un record
+ * o l'elemento di un vettore
+ * @param source
+ * @param start
+ * @param end
+ * @return
+ */
 char* extract_val(char * source, int start, int end) {
     char val [end-start] ;
     for (int i=start; i<end; i++)
         val[i]=source[start+i];
-    return &val;
+    return val;
 }
 
 void push_obj(Object obj)
@@ -133,7 +142,6 @@ double pop_real(){
     pop_obj();
     return n;
 }
-
 void push_val(char * val , int dim ) {
     Object obj;
     obj.size = dim;
@@ -227,7 +235,12 @@ void exec_cidx() {
         error("index out of bound");
     else push_int(index);
 }
-void exec_code() {}//scrivi il code con chat che risize ostack
+void exec_code() {
+    /**
+     *scrivi il code con chat che risize ostack, non credo che serva perchè ostack rimane della grandezza
+     *massima al massimo in futuro puoi mettere gestione dinamica memo per risparmiare sapazio
+    */
+}
 void exec_conc() {
    char* val1= pop_val(ostack[op].size);
    char* val2= pop_val(ostack[op].size);
@@ -250,7 +263,12 @@ void exec_empt() {
     pop_obj();
     push_int(dim ? 0 : 1);
 }
-void exec_equa() {}//check del type???
+void exec_equa() {
+    char* val1=pop_val(ostack[op].size);
+    char* val2=pop_val(ostack[op].size);
+    push_int((strcmp(val1, val2)!=0)?0:1);
+
+}//check del type già fatto dalla stable???
 void exec_geqi() {  int n, m;
     n = pop_int();
     m = pop_int();
@@ -284,8 +302,18 @@ void exec_head() {
     char* head=extract_val(val, 0 , size);
     push_val(head, size);}
 void exec_indl(int offset, int size) {
+
+    int dim=ostack[op].size;
+    if(!dim)
+        error("array is empty, cant access to the head");
+    char* val=pop_val(size);
+    char* field=extract_val(val, offset , size);
+    push_val(field, size);
 }
-void exec_ixad() { printf("Eseguo IXAD\n"); }
+void exec_ixad() {
+    int offset=pop_int();
+    ostack[op].addr+=offset;
+}
 void exec_jump(int addr) {pc=addr;}
 void exec_leqi() {int n, m;
     n = pop_int();
@@ -371,9 +399,9 @@ void exec_nequ() {
 void exec_newo(int size ,  int num) {
     Object var;
     var.size=size;
-    var.num=0;
+    var.num=num;
   if (num) {
-      var.addr= istack[ip];
+      var.addr= &istack[ip];
       ip += size;
   }else {
       var.addr=NULL;
@@ -418,7 +446,11 @@ void exec_skip(int offset) {
 void exec_skpf(int offset) {
     if(pop_int()) pc+=offset-1;
 }
-void exec_stor() { }
+void exec_stor() {
+    char* val1=pop_val(ostack[op].size);
+  Object obj =pop_obj();
+    obj.addr=val1;
+}
 void exec_subi() { int n, m;
     n=pop_int();
     m=pop_int();
@@ -443,7 +475,9 @@ void exec_tore() {
     int n =pop_int();
     push_real(n);
 }
-void exec_vars(int num) { }
+void exec_vars(int num) {
+    vars= (Object*) malloc(sizeof (Object)*num);
+}
 void exec_writ(char* format) {
     if (strlen(format)==1)
         write_simple(format);
@@ -516,7 +550,7 @@ void execute(Pstat istr) {
 
 void start_execution(Pstat program, int length) {
     prog=program;
-    pc =2;
+    pc =0;
     while(prog[pc].op!=HALT) {
         execute(&prog[pc]);
         pc++;

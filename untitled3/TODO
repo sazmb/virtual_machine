@@ -2,4 +2,19 @@ VM
 non sono sicuro che  il pop funzioni correttamente
 2--sistemare la divisione dei reali perchè quel n=0.0 potrebbe non essere troppo efficace
 3-- APOP- non sono sicuro di avere gestito giustp il valore di ritorno
-4-- come gestire gli ambienti locali
+4-- come gestire gli ambienti locali-- non lo avevo risolto??
+
+
+5V le stringhe non vengono lette correttamente
+6V il caso func nella lettura del pcode sicuramente e sbagliato
+7V non puoi semplicemente assegnare il puntatore ma devi anche copiare il valore
+    quando leggi un value che è una stringa
+8-- sistemare il fatto che nel READ vengono salvate le stringhe tra virgolette: bisongna toglierle
+
+9-- rileggi tutto perchè sei piu indietro di quanto credevi, mancano alcune funzionni che non sono
+    sate implementate a partire da exec-code e immagino che tutte le strutture debbano essere inizializzate
+    perchè le ho fatte tutte staticamente per ora
+
+10-- manca la riscalatura nello stor, per cambiare se sto cercando di assegnare un valore piu grande
+    non devo preuccuparmi se ha senso lo fa la symbol table
+11-- EXEC read non è completo
