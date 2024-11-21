@@ -72,7 +72,7 @@ typedef union  {
 typedef struct sobject{
     int size;
     int num;
-    char *addr;
+    void *addr;
 }Object;
 
 typedef struct sactivation{

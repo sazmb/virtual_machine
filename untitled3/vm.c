@@ -13,7 +13,7 @@ int pc;
 Object *vars;
 Object ostack [MAX_OBJECTS];
 Activation_record astack[MAX_OBJECTS];
-char istack[MAX_OBJECTS];
+void* istack;
 int vp=0;
 int op=0;
 int ip;
@@ -122,7 +122,7 @@ Object pop_obj()
     return ostack[--op];
 }
 char* pop_val(int dim) {
-    char* val;
+    void* val;
      val= (&istack[ip - dim]);
     pop_obj();
     return val;
