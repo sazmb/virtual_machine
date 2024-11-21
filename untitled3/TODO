@@ -18,3 +18,6 @@ non sono sicuro che  il pop funzioni correttamente
 10-- manca la riscalatura nello stor, per cambiare se sto cercando di assegnare un valore piu grande
     non devo preuccuparmi se ha senso lo fa la symbol table
 11-- EXEC read non è completo
+12-- op non fuziona devi vedere se conviene cambiare LODA o tutto il resto: se metti che quando fanno il pop
+    prendono il valore sotto dovrebbe funzionare(op-1)
+13-- conversione in binario non funziona studiarla meglio

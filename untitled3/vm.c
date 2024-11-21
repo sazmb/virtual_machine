@@ -13,9 +13,9 @@ int pc;
 Object *vars;
 Object ostack [MAX_OBJECTS];
 Activation_record astack[MAX_OBJECTS];
-char* *istack;
+char istack[MAX_OBJECTS];
 int vp=0;
-int op;
+int op=0;
 int ip;
 int ap;
 void error(char* msg) {
@@ -119,11 +119,11 @@ Object pop_obj()
     if(op == 0)
         error("Pop from empty object stack");
     ip -= total_size(ostack[op-1]);
-    return ostack[op--];
+    return ostack[--op];
 }
 char* pop_val(int dim) {
     char* val;
-    val= *(&istack[ip - dim]);
+     val= (&istack[ip - dim]);
     pop_obj();
     return val;
 }
@@ -146,7 +146,7 @@ void push_val(char * val , int dim ) {
     Object obj;
     obj.size = dim;
     obj.num = 1;
-    obj.addr = istack[ip];
+    obj.addr = &istack[ip];
     *obj.addr = *val;
     ip += dim;
     push_obj(obj);
@@ -156,8 +156,8 @@ void push_int(int n)
     Object obj;
     obj.size = SIZE_INT;
     obj.num = 1;
-    obj.addr = istack[ip];
-    * (int *) obj.addr = n;
+    obj.addr = &istack[ip];
+    * (int *) obj.addr = n;//non funziona non converte l'int in bit ma semplicemente assegna il valore intero a un char che lo legge come ASCII
     ip += SIZE_INT;
     push_obj(obj);
 }
@@ -168,7 +168,7 @@ void push_real(double n)
 { Object obj;
     obj.size = SIZE_REAL;
     obj.num = 1;
-    obj.addr = istack[ip];
+    obj.addr = &istack[ip];
     * (double *) obj.addr = n;
     ip += SIZE_REAL;
     push_obj(obj);
@@ -205,6 +205,10 @@ void write_complex(char *format) {
             printf("%s",s);
         }
     }
+}
+void initialize_istack (int start, int size) {
+    for(int i=start; i<size; i++)
+    istack[ip]='\0';
 }
 void exec_addi()
 { int n, m;
@@ -400,7 +404,8 @@ void exec_newo(int size ,  int num) {
     Object var;
     var.size=size;
     var.num=num;
-  if (num) {
+  if (num){
+      initialize_istack(ip, size);
       var.addr= &istack[ip];
       ip += size;
   }else {
@@ -447,9 +452,9 @@ void exec_skpf(int offset) {
     if(pop_int()) pc+=offset-1;
 }
 void exec_stor() {
-    char* val1=pop_val(ostack[op].size);
+    char* val1=pop_val(ostack[op-1].size);
   Object obj =pop_obj();
-    obj.addr=val1;
+  strcpy(obj.addr,val1);
 }
 void exec_subi() { int n, m;
     n=pop_int();
@@ -551,6 +556,7 @@ void execute(Pstat istr) {
 void start_execution(Pstat program, int length) {
     prog=program;
     pc =0;
+
     while(prog[pc].op!=HALT) {
         execute(&prog[pc]);
         pc++;
