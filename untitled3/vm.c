@@ -99,8 +99,8 @@ void read_complex(int oid , char* format) {
  * @param end
  * @return
  */
-char* extract_val(char * source, int start, int end) {
-    char val [end-start] ;
+void* extract_val(char * source, int start, int end) {
+    void* val [end-start] ;
     for (int i=start; i<end; i++)
         val[i]=source[start+i];
     return val;
@@ -121,14 +121,14 @@ Object pop_obj()
     ip -= total_size(ostack[op-1]);
     return ostack[--op];
 }
-char* pop_val(int dim) {
+void* pop_val(int size, int num) {
     void* val;
-     val= (&istack[ip - dim]);
+    val= (&istack[ip - (num*size)]);
     pop_obj();
     return val;
 }
 char* pop_string() {
-  return   pop_val(SIZE_STRING);
+  return   pop_val(SIZE_STRING,1);
 }
 int pop_int()
 {   int n;
@@ -142,12 +142,12 @@ double pop_real(){
     pop_obj();
     return n;
 }
-void push_val(void* val , int dim ) {
+void push_val(void* val , int dim , int num) {
     Object obj;
     obj.size = dim;
-    obj.num = 1;
+    obj.num = num;
     obj.addr = &istack[ip];
-    obj.addr = val;
+    memcpy(obj.addr, val,dim);
     ip += dim;
     push_obj(obj);
 }
@@ -162,7 +162,7 @@ void push_int(int n)
     push_obj(obj);
 }
 void push_string(char *s) {
-    push_val(s, SIZE_STRING);
+    push_val(s, SIZE_STRING, 1);
 }
 void push_real(double n)
 { Object obj;
@@ -248,11 +248,22 @@ void exec_code() {
      *massima al massimo in futuro puoi mettere gestione dinamica memo per risparmiare sapazio
     */
 }
-void exec_conc() {
-    void* val1= pop_val(ostack[op-1].size);
-    void* val2= pop_val(ostack[op-1].size);
+void exec_conc()  {
+  /**
     void* new_val=concat_void(val1, val2);
-    push_val(new_val, strlen(new_val));}
+    **/
+    /**i due vettori vengono letti in ordine inverso dalla pila: viene letta prima la coda e poi la testa**/
+    Object obj1=ostack[op-1];
+    Object obj2=ostack[op-2];
+    int dim1=obj1.size*obj1.num;
+    int dim2=obj2.size*obj2.num;
+    void* val1= pop_val(obj1.size, obj1.num);
+    void* val2= pop_val(obj2.size,obj2.num);
+    void* newVal=malloc(dim1+dim2);
+    memcpy(&newVal[0],val2,dim2);
+    memcpy(&newVal[dim2-1],val1,dim1);
+    push_val(newVal,obj1.size,dim1+dim2);
+}
 void exec_divi() {
     int n, m;
     n=pop_int();
@@ -271,9 +282,18 @@ void exec_empt() {
     push_int(dim ? 0 : 1);
 }
 void exec_equa() {
-    void* val1=pop_val(ostack[op-1].size);
-    void* val2=pop_val(ostack[op-1].size);
-    push_int((strcmp(val1, val2)!=0)?0:1);
+    /**
+     * in teoria la symbol table ha gia controllato che siano compatibili
+     *quindi basterebbe la dimensione di uno o dell'altro
+     *
+     */
+    Object obj1=ostack[op-1];
+    Object obj2=ostack[op-2];
+    int dim1=obj1.size*obj1.num;
+    int dim2=obj2.size*obj2.num;
+    void* val1= pop_val(obj1.size, obj1.num);
+    void* val2= pop_val(obj2.size,obj2.num);
+    push_int((memcmp(val1, val2,(dim1<=dim2) ? dim1 : dim2)!=0)?0:1);
 
 }//check del type già fatto dalla stable???
 void exec_geqi() {  int n, m;
@@ -301,25 +321,24 @@ void exec_gths() {char *n, *m;
     m = pop_string();
     push_int((strcmp(m,n )>0) ? 1: 0);}
 void exec_head() {
-    Object obj;
-    int size=ostack[op].size;
-    if(!size)
+    Object obj=ostack[op-1];
+    if(!obj.size)
         error("array is empty, cant access to the head");
-    char* val=pop_val(size);
-    char* head=extract_val(val, 0 , size);
-    push_val(head, size);}
+    void* val=pop_val(obj.size, obj.num);
+    void* head=extract_val(val, 0 , obj.size);
+    push_val(head, obj.size,1);}
 void exec_indl(int offset, int size) {
 
-    int dim=ostack[op].size;
-    if(!dim)
+    Object obj =ostack[op-1];
+    if(!size)
         error("array is empty, cant access to the head");
-    char* val=pop_val(size);
-    char* field=extract_val(val, offset , size);
-    push_val(field, size);
+    void* val=pop_val(obj.size,obj.num);
+    void* field=extract_val(val, offset , size);
+    push_val(field, size,1);
 }
-void exec_ixad() {
+void exec_ixad(int scale ) {
     int offset=pop_int();
-    ostack[op].addr+=offset;
+    ostack[op-1].addr+=offset*scale;
 }
 void exec_jump(int addr) {pc=addr;}
 void exec_leqi() {int n, m;
@@ -336,13 +355,13 @@ void exec_leqs() { char *n, *m;
     push_int((strcmp(m,n )<=0) ? 1: 0); }
 void exec_load(int env, int oid) {
     if(!env) {
-       push_val( vars[oid].addr, vars[oid].size);
+       push_val( vars[oid].addr, vars[oid].size,vars[oid].num);
     }
 }
 void exec_loci(int const_i) {
     push_int(const_i);
 }
-void exec_locr(double const_r) {
+ void exec_locr(double const_r) {
     push_real(const_r);
 }
 void exec_locs(char* const_s) {
@@ -369,13 +388,13 @@ void exec_lths() { char *n, *m;
     m = pop_string();
     push_int((strcmp(m,n )<0) ? 1: 0); }
 void exec_memb()   {
-    int size=ostack[op].size;
-    int num=ostack[op].num;
+    Object obj =ostack[op-1];
+
     int found=1;
-    char* array_val=pop_val(size*num);
-    char* val=pop_val(ostack[op].size);
-    for(int i=0; i<size*num; i+=size)
-       if( strcmp(val, &array_val[i] )==0) {
+    void* array_val=pop_val(obj.size,obj.num);
+    void* val=pop_val(obj.size,1);
+    for(int i=0; i<obj.size*obj.num; i+=obj.size)
+       if( memcmp(val, &array_val[i],obj.size )==0) {
            found=1;
            break;
        }
@@ -399,9 +418,13 @@ void exec_negr() {   double m;
     m = pop_real();
     push_real(-m);}
 void exec_nequ() {
-  char* val1= pop_val(ostack[op].size);
-  char* val2= pop_val(ostack[op].size);
-    push_int(strcmp(val1, val2) ? 0 : 1);
+    Object obj1=ostack[op-1];
+    Object obj2=ostack[op-2];
+    int dim1=obj1.size*obj1.num;
+    int dim2=obj2.size*obj2.num;
+    void* val1= pop_val(obj1.size, obj1.num);
+    void* val2= pop_val(obj2.size,obj2.num);
+    push_int((memcmp(val1, val2,(dim1<=dim2) ? dim1 : dim2)!=0)?0:1);
 }
 void exec_newo(int size ,  int num) {
     Object var;
@@ -417,12 +440,13 @@ void exec_newo(int size ,  int num) {
       vars[vp++]=var;
 }
 void exec_pack(int num, int size , int card) {
-    char* vars[num];
-    char* concat;
+    void* vars[num];
+    void* concat;
     for (int i=0; i<num; i++)
       if(i)
           concat=concatena_stringa(concat,  pop_val(ostack[op-i].size) );
-      else{          concat=pop_val( ostack[op-i].size);}
+      else
+          { concat=pop_val( ostack[op-i].size);}
     push_val(concat, strlen(concat));
     if(card>1)
         ostack[op].num=card;
@@ -437,13 +461,11 @@ void exec_read(int oid , char * format) {
     if (format[0]!='{' && format[0]!='[')
         read_simple( oid ,  format);
     else read_complex(oid ,format);
-
-
 }
 void exec_retn() {
-    char * val=pop_val(ostack[op].size);
+    void* val=pop_val(ostack[op-1].size,ostack[op-1].num);
     for (int i =0; i<astack[ap].param_num;i++)
-        pop_val(ostack[op].size);
+        pop_val(ostack[op-1].size,ostack[op-1].num);
     pc=astack[ap-1].ret_addr;
     ap--;
     push_val(val,strlen(val));
@@ -559,7 +581,7 @@ void execute(Pstat istr) {
 void start_execution(Pstat program, int length) {
     prog=program;
     pc =0;
-    istack= (void *) malloc(100000);
+    istack=  malloc(10);
 
     while(prog[pc].op!=HALT) {
         execute(&prog[pc]);

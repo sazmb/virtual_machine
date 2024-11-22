@@ -23,3 +23,7 @@ non sono sicuro che  il pop funzioni correttamente
 13-- conversione in binario non funziona studiarla meglio
 14-- implementare concat void
 15-- e gestire gli array che cambiano di dimensione, bisogna spostarli dall'istack
+16-- extract value è da fixare
+17-- non credo che pop val funzioni
+18-- non ho gestito da nessuna parte gli ambienti locali
+19-- uno dei due equal o notequal è sbagliato nel valore che ritorna
