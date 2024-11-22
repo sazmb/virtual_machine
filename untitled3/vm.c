@@ -90,7 +90,65 @@ void read_complex(int oid , char* format) {
     }
 
 }
+char* int_to_binary_string_4_bytes(int number) {
+    // Numero fisso di bit per 4 byte (32 bit)
+    int bits = 32;
+    char* binary_string = (char*)malloc(bits + 1); // +1 per il terminatore null
+    if (binary_string == NULL) {
+        return NULL; // Fallimento allocazione memoria
+    }
 
+    binary_string[bits] = '\0'; // Aggiunge il terminatore null
+
+    // Converte in binario a 32 bit
+    for (int i = bits - 1; i >= 0; i--) {
+        binary_string[i] = (number & 1) ? '1' : '0'; // Controlla l'ultimo bit
+        number >>= 1; // Shift a destra
+    }
+
+    return binary_string; // Restituisce la stringa binaria
+}
+char* bitstring_to_charstring(const char* bitstring) {
+
+    size_t bit_length = strlen(bitstring);
+    char array_prova[4];
+    // Verifica che la lunghezza sia un multiplo di 8
+    if (bit_length % 8 != 0) {
+        fprintf(stderr, "Errore: La stringa di bit deve avere una lunghezza multipla di 8.\n");
+        return NULL;
+    }
+
+    // Calcola la lunghezza della nuova stringa
+    size_t char_length = bit_length / 8;
+
+    // Alloca memoria per la stringa di output (più il terminatore null)
+    char* char_string = (char*)malloc(char_length + 1);
+    if (char_string == NULL) {
+        fprintf(stderr, "Errore: Allocazione della memoria fallita.\n");
+        return NULL;
+    }
+    char prova='a';
+    // Per ogni gruppo di 8 bit, calcola il carattere corrispondente
+    for (size_t i = 0; i < char_length; i++) {
+        char current_char = 0;
+
+        for (size_t j = 0; j < 8; j++) {
+            if (bitstring[i * 8 + j] == '1') {
+                current_char |= (1 << (7 - j)); // Setta il bit corrispondente
+            }
+        }
+
+        //char_string[i] = current_char; // Assegna il carattere risultante
+        array_prova[i] = current_char; // Assegna il carattere risultante
+
+    }
+
+    char_string[char_length] = '\0'; // Aggiunge il terminatore null
+    return array_prova;
+}
+char* create_istack_string(int n) {
+    return bitstring_to_charstring(int_to_binary_string_4_bytes(n));
+}
 /**
  * non ricordo bene ma mi sembra che serva a estrarre il campo di un record
  * o l'elemento di un vettore
@@ -157,7 +215,8 @@ void push_int(int n)
     obj.size = SIZE_INT;
     obj.num = 1;
     obj.addr = &istack[ip];
-    * (int *) obj.addr = n;//non funziona non converte l'int in bit ma semplicemente assegna il valore intero a un char che lo legge come ASCII
+    //* (int *) obj.addr = n;//non funziona non converte l'int in bit ma semplicemente assegna il valore intero a un char che lo legge come ASCII
+    strcpy(obj.addr,create_istack_string(n));
     ip += SIZE_INT;
     push_obj(obj);
 }

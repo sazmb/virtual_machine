@@ -21,3 +21,6 @@ non sono sicuro che  il pop funzioni correttamente
 12-- op non fuziona devi vedere se conviene cambiare LODA o tutto il resto: se metti che quando fanno il pop
     prendono il valore sotto dovrebbe funzionare(op-1)
 13-- conversione in binario non funziona studiarla meglio
+14-- c'è un problema perchè la conversione in binario non funziona perchè maneggiando delle stringhe quando vedono
+     000000000 lo codificano con null e non so perchè mi cancella anche il resto, non so come modificarlo
+     l'alternativa è fare un array statico di char forse funziona
