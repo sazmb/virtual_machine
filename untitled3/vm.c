@@ -142,12 +142,12 @@ double pop_real(){
     pop_obj();
     return n;
 }
-void push_val(char * val , int dim ) {
+void push_val(void* val , int dim ) {
     Object obj;
     obj.size = dim;
     obj.num = 1;
     obj.addr = &istack[ip];
-    *obj.addr = *val;
+    obj.addr = val;
     ip += dim;
     push_obj(obj);
 }
@@ -207,8 +207,11 @@ void write_complex(char *format) {
     }
 }
 void initialize_istack (int start, int size) {
-    for(int i=start; i<size; i++)
-    istack[ip]='\0';
+    for(int i=start; i<size; i++);
+}
+void* concat_void (void* val1, void* val2) {
+    return val1;
+
 }
 void exec_addi()
 { int n, m;
@@ -246,9 +249,9 @@ void exec_code() {
     */
 }
 void exec_conc() {
-   char* val1= pop_val(ostack[op].size);
-   char* val2= pop_val(ostack[op].size);
-    char* new_val=concatena_stringa(val1, val2);
+    void* val1= pop_val(ostack[op-1].size);
+    void* val2= pop_val(ostack[op-1].size);
+    void* new_val=concat_void(val1, val2);
     push_val(new_val, strlen(new_val));}
 void exec_divi() {
     int n, m;
@@ -268,8 +271,8 @@ void exec_empt() {
     push_int(dim ? 0 : 1);
 }
 void exec_equa() {
-    char* val1=pop_val(ostack[op].size);
-    char* val2=pop_val(ostack[op].size);
+    void* val1=pop_val(ostack[op-1].size);
+    void* val2=pop_val(ostack[op-1].size);
     push_int((strcmp(val1, val2)!=0)?0:1);
 
 }//check del type già fatto dalla stable???
@@ -556,6 +559,7 @@ void execute(Pstat istr) {
 void start_execution(Pstat program, int length) {
     prog=program;
     pc =0;
+    istack= (void *) malloc(100000);
 
     while(prog[pc].op!=HALT) {
         execute(&prog[pc]);

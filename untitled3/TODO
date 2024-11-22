@@ -21,3 +21,5 @@ non sono sicuro che  il pop funzioni correttamente
 12-- op non fuziona devi vedere se conviene cambiare LODA o tutto il resto: se metti che quando fanno il pop
     prendono il valore sotto dovrebbe funzionare(op-1)
 13-- conversione in binario non funziona studiarla meglio
+14-- implementare concat void
+15-- e gestire gli array che cambiano di dimensione, bisogna spostarli dall'istack
