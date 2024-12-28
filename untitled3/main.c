@@ -180,9 +180,11 @@ int main(int argc, char* argv[]) {
 
     // Carica le istruzioni dal file
     Stat *prog = carica_file(file);
+    /*
     for (int i=0; i<prog[0].arg1.ival+1; i++ ) {
         print_stat_to_file(i , prog[i]);
     }
+    */
     int lenght=0;
     start_execution(prog, lenght);
 

@@ -7,7 +7,7 @@
 #define MAX_OBJECTS 1000000
 int const SIZE_INT=4;
 int const SIZE_REAL=8;
-int const SIZE_STRING=4;
+int const SIZE_STRING=1;
 Pstat prog;
 int pc;
 Object *vars;
@@ -18,78 +18,139 @@ int vp=0;
 int op=0;
 int ip;
 int ap;
+int is_address;
 void error(char* msg) {
     printf("%s", msg);
     exit (EXIT_FAILURE);
 }
-char* concatena_stringa(char* buffer,  char* aggiunta) {
+void* void_concat(void* buffer, int l1,  void* aggiunta, int l2) {
 
     // Calcoliamo la nuova lunghezza necessaria
-    size_t lunghezza_iniziale = (buffer ? strlen(buffer) : 0);
-    size_t nuova_lunghezza = lunghezza_iniziale + strlen(aggiunta) + 1; // +1 per il terminatore '\0'
-    char* new_buffer=(char*) malloc (nuova_lunghezza);
+    size_t lunghezza_iniziale = l1;
+    size_t nuova_lunghezza = lunghezza_iniziale + l2 ; // +1 per il terminatore '\0'
+    void* new_buffer= malloc (nuova_lunghezza);
     // Riallociamo la memoria per il buffer
 
-    strcpy(new_buffer, buffer);
+    memcpy(new_buffer, buffer, lunghezza_iniziale);
     if (new_buffer == NULL) {
         perror("Errore nella riallocazione della memoria");
         exit(EXIT_FAILURE);
     }
 
     // Se il buffer è stato appena creato (era NULL), dobbiamo assicurarci che contenga una stringa vuota
-    if (lunghezza_iniziale == 0) {
-        buffer[0] = '\0'; // Impostiamo il terminatore di stringa iniziale
-    }
+  /**  if (lunghezza_iniziale == 0) {
+    *     buffer[0] = '\0'; // Impostiamo il terminatore di stringa iniziale
+    * }
+   */
 
 
-    strcat(new_buffer, aggiunta);
+    memcpy(&new_buffer[l1], aggiunta ,l2);
 
     return new_buffer;
 
 
 }
-void read_simple(int oid , char* format) {
+char* estrai_sottostringa(const char* sorgente, int inizio, int fine) {
+    // Calcola la lunghezza della sottostringa
+    int lunghezza = fine - inizio + 1;
+
+    // Alloca memoria per la sottostringa (+1 per il terminatore '\0')
+    char* sottostringa = (char*)malloc(lunghezza + 1);
+    if (sottostringa == NULL) {
+        perror("Errore di allocazione memoria");
+        return NULL;
+    }
+
+    // Copia la sottostringa nella nuova memoria
+    memcpy(sottostringa, sorgente + inizio, lunghezza);
+
+    // Aggiunge il terminatore alla fine
+    sottostringa[lunghezza] = '\0';
+
+    return sottostringa;
+}
+void read_simple(int address , char* format) {
     if (strcmp(format, "i")) {
         int i;
         scanf("%d",&i );
-        *(int *) vars[oid].addr=i;
+        *(int *) vars[address].addr=i;
     }
     if (strcmp(format, "r")) {
         double r;
         scanf("%lf",&r );
-        *(double *) vars[oid].addr=r;
+        *(double *) vars[address].addr=r;
     }
     if (strcmp(format, "s")) { // non basta cosi perchè è un puntatore, va salvato in un altro modo
         char *s;
         scanf("%s",s );
-        vars[oid].addr=s;
+
+        * (char**) vars[address].addr=s;
     }
 }
 void read_complex(int oid , char* format) {
-    //record
-    if (format[0]=='{') {
-        //va modificata la stringa per rimuovere le virgole in piu bisogna capire se prendere come char
-        //un numero e poi castarlo basta oppure devo fare atoi e poi tornare a trasformalro in car
-        char *s;
-        scanf("%s",s );
-        vars[oid].addr=s;
+    char* stringa =malloc(1000);
+    gets(stringa);
+    void* val =NULL;
+    int total_length=0;
+    if (format[0]=='{'  || format[0]=='[')
+        {
+       read_simple(oid , format);
+       }
+
+    //scanf
+
+    for (int i=0;i<strlen(format); i++) {
+        if (format[i]=='{' || format[i]=='}' || format[i]=='['
+        || format[i]==']' ){
+            stringa++; // Consuma anche il newline);
+        }
+        else if (format[i]=='i') {
+            int temp=0;
+            sscanf(stringa, "%d",&temp );
+            if (val==NULL) {
+                val=malloc(sizeof(int));
+                memcpy(val, &temp, 4);
+                total_length+=sizeof(int);
+            }
+            else {
+                void_concat(val, total_length, &temp, sizeof(int) );
+            }
+            stringa = strchr(stringa, ' ') + 1;
+        }
+        else if (format[i]=='r') {
+            double temp=0;
+            sscanf(stringa, "%lf",&temp );
+            if (val==NULL) {
+                val=malloc(sizeof(double));
+                memcpy(val, &temp, 8);
+                total_length+=sizeof(double);
+            }
+            else {
+                void_concat(val, total_length, &temp, sizeof(double) );
+            }stringa = strchr(stringa, ' ') + 1;
+        }
+        /* non sono convinto che funzioni nel modo giusto questo metodo per salvare la str
+         * perchè dovrei aggiungere solo il puntatore alla stringa a val  e poi allocare la
+         *  stringa effetiva da un altra parte
+         */
+        else if (format[i]=='s') {
+            char temp[100];
+            sscanf(stringa, "%s",temp);
+            if (val==NULL) {
+                val=malloc(SIZE_STRING);
+                memcpy(val, temp, SIZE_STRING);
+                total_length+=SIZE_STRING;
+            }
+            else {
+                void_concat(val, total_length, temp, SIZE_STRING );
+            }stringa = strchr(stringa, ' ') + 1;
+        }
     }
-    //array di record
-    else if (format[0]=='['&& format[1]=='{') {
-        //
-        //
-        char *s;
-        scanf("%s",s );
-        vars[oid].addr=s;
-    }
-    //record normali
-    else {
-        char *s;
-        scanf("%s",s );
-        vars[oid].addr=s;
-    }
+    mempcpy(vars[oid].addr, val,total_length);
+    //manca la funzione di write cosi faccio un po fatica a leggere
 
 }
+
 
 /**
  * non ricordo bene ma mi sembra che serva a estrarre il campo di un record
@@ -99,17 +160,19 @@ void read_complex(int oid , char* format) {
  * @param end
  * @return
  */
-void* extract_val(char * source, int start, int end) {
-    void* val [end-start] ;
-    for (int i=start; i<end; i++)
-        val[i]=source[start+i];
+void* extract_val(void * source, int offset, int size) {
+    void* val =malloc(size) ;
+    memcpy(val, &source[offset], size);
     return val;
 }
-
 void push_obj(Object obj)
 {
     if(op == MAX_OBJECTS) error("Object stack overflow");
     ostack[op++] = obj;
+}
+void push_record(Activation_record act) {
+    if(ap == MAX_OBJECTS) error("Activation record stack overflow");
+    astack[ap++] = act;
 }
 int total_size(Object obj) {
     return (obj.size * obj.num);
@@ -121,14 +184,27 @@ Object pop_obj()
     ip -= total_size(ostack[op-1]);
     return ostack[--op];
 }
+Activation_record pop_record()
+{
+    if(ap == 0)
+        error("Pop from empty activation_record stack");
+    /*
+     *forse qui devo rimuovere le cose da ostack e quindi poi a cascata anche da istack
+    //ip -= total_size(ostack[op-1]);
+    */
+    return astack[--ap];
+}
 void* pop_val(int size, int num) {
     void* val;
     val= (&istack[ip - (num*size)]);
     pop_obj();
     return val;
 }
-char* pop_string() {
-  return   pop_val(SIZE_STRING,1);
+char* pop_string()  {
+  char* s;
+    s = * (char **) &istack[ip - 1];
+    pop_obj();
+    return s;
 }
 int pop_int()
 {   int n;
@@ -162,7 +238,19 @@ void push_int(int n)
     push_obj(obj);
 }
 void push_string(char *s) {
-    push_val(s, SIZE_STRING, 1);
+    /** i have to include the '/0' terminator character to future reading without
+      * knowing before the length of the string
+      */
+    char *ps = malloc(strlen(s)+1);// probably i'm loosing a lot of memory dont using free
+    strcpy(ps, s);
+    Object obj;
+    obj.size =1;
+    obj.num = 1;
+    obj.addr = &istack[ip];
+    * (char **) obj.addr = ps;//non funziona non converte l'int in bit ma semplicemente assegna il valore intero a un char che lo legge come ASCII
+    ip += 1;
+    push_obj(obj);
+
 }
 void push_real(double n)
 { Object obj;
@@ -188,7 +276,7 @@ void write_simple(char *format) {
 
 }
 void write_complex(char *format) {
-    char* val=pop_val(ostack[op].size);
+    void* val=pop_val(ostack[op-1].size, ostack[op-1].num);
     for (int i=0; i<strlen(format); i++) {
         if (format[i]=='[' ||  format[i]==',' || format[i]==']' || format[i]=='{' || format[i]=='}')
             printf("%c",format[i]);
@@ -206,13 +294,6 @@ void write_complex(char *format) {
         }
     }
 }
-void initialize_istack (int start, int size) {
-    for(int i=start; i<size; i++);
-}
-void* concat_void (void* val1, void* val2) {
-    return val1;
-
-}
 void exec_addi()
 { int n, m;
 
@@ -227,10 +308,11 @@ void exec_addr(){
     push_real(m+n);
 }
 void exec_apop() {
-    if(ap == 0)
-    error("Pop from empty acrivation stack");
-    op=astack[ap].ret_addr;
-        ap--; }// controllare valore di ritorno
+
+    pop_record();
+
+}// controllare valore di ritorno
+
 void exec_card() {
     int dim=ostack[op].num;
     pop_obj();
@@ -293,7 +375,8 @@ void exec_equa() {
     int dim2=obj2.size*obj2.num;
     void* val1= pop_val(obj1.size, obj1.num);
     void* val2= pop_val(obj2.size,obj2.num);
-    push_int((memcmp(val1, val2,(dim1<=dim2) ? dim1 : dim2)!=0)?0:1);
+    (dim1!=dim2) ? push_int(0) :
+    push_int(!(memcmp(val1, val2,(dim1<=dim2) ? dim1 : dim2)));
 
 }//check del type già fatto dalla stable???
 void exec_geqi() {  int n, m;
@@ -330,9 +413,14 @@ void exec_head() {
 void exec_indl(int offset, int size) {
 
     Object obj =ostack[op-1];
+    /*
+     *non posso usare direttamente pop_val se no decrementa anche ip
+     *devo accedere alla istack tramite l'obj.addr che staa sopra ostack
+     */
     if(!size)
         error("array is empty, cant access to the head");
-    void* val=pop_val(obj.size,obj.num);
+    op--;
+    void* val=obj.addr;
     void* field=extract_val(val, offset , size);
     push_val(field, size,1);
 }
@@ -356,6 +444,12 @@ void exec_leqs() { char *n, *m;
 void exec_load(int env, int oid) {
     if(!env) {
        push_val( vars[oid].addr, vars[oid].size,vars[oid].num);
+    }else {
+        int size =ostack[astack[ap-1].obj+oid].size;
+        int num=ostack[astack[ap-1].obj+oid].num;
+        void * val =malloc(size*num);
+        mempcpy(val,ostack[astack[ap-1].obj+oid].addr,size*num);
+        push_val(val, size, num );
     }
 }
 void exec_loci(int const_i) {
@@ -374,7 +468,13 @@ void exec_loda(int env ,int oid) {
     obj.num=vars[oid].num;
     obj.addr=vars[oid].addr;
     push_obj(obj);
-} }
+}else {
+    Object obj;
+    obj.size=ostack[astack[ap-1].obj+oid-1].size;
+    obj.num=ostack[astack[ap-1].obj+oid-1].num;
+    obj.addr=ostack[astack[ap-1].obj+oid-1].addr;
+    push_obj(obj);
+}}
 void exec_lthi() { int n, m;
     n = pop_int();
     m = pop_int();
@@ -424,14 +524,15 @@ void exec_nequ() {
     int dim2=obj2.size*obj2.num;
     void* val1= pop_val(obj1.size, obj1.num);
     void* val2= pop_val(obj2.size,obj2.num);
-    push_int((memcmp(val1, val2,(dim1<=dim2) ? dim1 : dim2)!=0)?0:1);
+    //memcmp return 0 if equals
+    dim1!=dim2 ? push_int(1) :
+    push_int(memcmp(val1, val2,dim1<=dim2 ? dim1 : dim2));
 }
 void exec_newo(int size ,  int num) {
     Object var;
     var.size=size;
     var.num=num;
   if (num){
-      initialize_istack(ip, size);
       var.addr= &istack[ip];
       ip += size;
   }else {
@@ -440,22 +541,33 @@ void exec_newo(int size ,  int num) {
       vars[vp++]=var;
 }
 void exec_pack(int num, int size , int card) {
-    void* vars[num];
+    void* vars;
     void* concat;
-    for (int i=0; i<num; i++)
-      if(i)
-          concat=concatena_stringa(concat,  pop_val(ostack[op-i].size) );
-      else
-          { concat=pop_val( ostack[op-i].size);}
-    push_val(concat, strlen(concat));
-    if(card>1)
-        ostack[op].num=card;
+    int concat_size=0;
+    for (int i=0; i<=num; i++)
+      if(i) {
+          int current_size =ostack[op-1].size;
+          int current_num =ostack[op-1].num;
+
+          concat=void_concat(pop_val(current_size, current_num), current_size,concat  ,concat_size );
+          concat_size+=current_size*current_num;
+      }
+      else {
+          int s=ostack[op-1].size;
+          int n=ostack[op-1].num;
+          concat_size=0;
+          concat=malloc((s*n));
+          memcpy(concat, pop_val(s, n), s*n);
+          concat_size+=s*n;
+      }
+    push_val(concat, size,card);
 }
 void exec_push(int n) {
       Activation_record act;
-      act.obj=ostack[op];
+    act.obj=op-n;
     act.param_num=n;
     act.ret_addr=pc+1;
+    push_record(act);
 }
 void exec_read(int oid , char * format) {
     if (format[0]!='{' && format[0]!='[')
@@ -463,12 +575,16 @@ void exec_read(int oid , char * format) {
     else read_complex(oid ,format);
 }
 void exec_retn() {
-    void* val=pop_val(ostack[op-1].size,ostack[op-1].num);
-    for (int i =0; i<astack[ap].param_num;i++)
+    int size = ostack[op-1].size;
+    int num = ostack[op-1].num;
+    //getting the return value
+    void* val=pop_val(size,num);
+    //remoction of all local variables and value on the istack and ostack
+    for (int i =0; i<astack[ap-1].param_num;i++)
         pop_val(ostack[op-1].size,ostack[op-1].num);
+
     pc=astack[ap-1].ret_addr;
-    ap--;
-    push_val(val,strlen(val));
+    push_val(val,size,num);
 }
 void exec_skip(int offset) {
     pc+=offset-1;
@@ -477,9 +593,22 @@ void exec_skpf(int offset) {
     if(pop_int()) pc+=offset-1;
 }
 void exec_stor() {
-    char* val1=pop_val(ostack[op-1].size);
-  Object obj =pop_obj();
-  strcpy(obj.addr,val1);
+    int size=ostack[op-1].size;
+    int num=ostack[op-1].num;
+    void* val1=pop_val(size,num);
+    Object obj =ostack[op-1];
+    op--;
+
+  /**   //resize if an array or a string and the current dim of var dont match with dim of new value(actually im doing the rizement only
+   *   if the var is smaller)
+      if (obj.size*obj.num<size*num) {
+      int offset =obj.size*obj.num-size*num;
+      for (int i=obj.addr+obj.size*obj.num); i<ip; i++)
+           istack[i]=istack[i+offset];
+
+    }
+    */
+  memcpy(obj.addr,val1,size*num);
 }
 void exec_subi() { int n, m;
     n=pop_int();
@@ -494,9 +623,9 @@ void exec_tail() {  Object obj;
     int num=ostack[op].num;
     if(!size)
         error("array is empty, cant access to the head");
-    char* val=pop_val(size);
-    char* tail=extract_val(val, size, size*num);
-    push_val(tail, strlen(tail));}
+    void* val=pop_val(size,num);
+    void* tail=extract_val(val, size, size*num);
+    push_val(tail, size, (num-1));}
 void exec_toin() {
     double n=pop_real();
     push_int((int) n);
@@ -539,7 +668,7 @@ void execute(Pstat istr) {
         case HALT: break;
         case HEAD: exec_head(); break;
         case INDL: exec_indl(istr->arg1.ival,istr->arg2.ival); break;
-        case IXAD: exec_ixad(); break;
+        case IXAD: exec_ixad(istr->arg1.ival); break;
         case JUMP: exec_jump(istr->arg1.ival); break;
         case LEQI: exec_leqi(); break;
         case LEQR: exec_leqr(); break;
@@ -581,7 +710,7 @@ void execute(Pstat istr) {
 void start_execution(Pstat program, int length) {
     prog=program;
     pc =0;
-    istack=  malloc(10);
+    istack=malloc(100000);
 
     while(prog[pc].op!=HALT) {
         execute(&prog[pc]);

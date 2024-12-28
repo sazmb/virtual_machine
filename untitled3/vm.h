@@ -77,13 +77,13 @@ typedef struct sobject{
 
 typedef struct sactivation{
     int param_num;
-    Object obj;
+    int obj;
     int ret_addr;
 }Activation_record;
 
 typedef struct sstat {
     int addr;
-    int op;
+    Operator op;
     Value arg1;
     Value arg2;
     Value arg3;
