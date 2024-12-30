@@ -7,7 +7,7 @@
 #define MAX_OBJECTS 1000000
 int const SIZE_INT=4;
 int const SIZE_REAL=8;
-int const SIZE_STRING=1;
+int const SIZE_STRING=4;
 Pstat prog;
 int pc;
 Object *vars;
@@ -202,7 +202,7 @@ void* pop_val(int size, int num) {
 }
 char* pop_string()  {
   char* s;
-    s = * (char **) &istack[ip - 1];
+    s = * (char **) &istack[ip - SIZE_STRING];
     pop_obj();
     return s;
 }
@@ -244,11 +244,11 @@ void push_string(char *s) {
     char *ps = malloc(strlen(s)+1);// probably i'm loosing a lot of memory dont using free
     strcpy(ps, s);
     Object obj;
-    obj.size =1;
+    obj.size =SIZE_STRING;
     obj.num = 1;
     obj.addr = &istack[ip];
     * (char **) obj.addr = ps;//non funziona non converte l'int in bit ma semplicemente assegna il valore intero a un char che lo legge come ASCII
-    ip += 1;
+    ip += SIZE_STRING;
     push_obj(obj);
 
 }
@@ -269,7 +269,8 @@ void write_simple(char *format) {
     else if(format[0]=='r') {
         double n=pop_real();
         printf("%lf",n);
-    }if(format[0]=='s') {
+    }
+    if(format[0]=='s') {
         char* s=pop_string();
         printf("%s",s);
     }
@@ -608,6 +609,9 @@ void exec_stor() {
 
     }
     */
+
+       //caso: stringa
+
   memcpy(obj.addr,val1,size*num);
 }
 void exec_subi() { int n, m;

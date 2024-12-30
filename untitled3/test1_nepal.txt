@@ -1,66 +1,29 @@
 types
-    num = int;
-    str = string;
+    arr = [int];
 variables
-    name : str;
-    id : num;
+    numbers : arr;
 run
-    name = "John";
-    id = 101;
-    write name;
-    write id;
+     numbers = [1, 2, 3, 4];
+        write numbers[2];
 end
 
+Code size: 17
 
-Code size: 14
-
-0	CODE	13
+0	CODE	16
 1	VARS	1
-2	NEWO	4	1
-3	LODA	0	name
-4	LOCS	"John"
-5	STOR
-6	LODA	0	id
-7	LOCI	101
-8	STOR
-9	LOAD	0	name
-10	WRIT	s
-11	LOAD	0	id
-12	WRIT	i
-13	HALT
+2	NEWO	4	0
+3	LODA	0	numbers
+4	LOCI	1
+5	LOCI	2
+6	LOCI	3
+7	LOCI	4
+8	PACK	4	16	4
+9	STOR
+10	LODA	0	numbers
+11	LOCI	2
+12	CIDX
+13	IXAD	4
+14	INDL	0	4
+15	WRIT	i
+16	HALT
 
-
-Code size: 15
-
-0	CODE	14
-1	VARS	1
-2	NEWO	8	1
-3	LODA	0	my_rect
-4	LOCI	5
-5	LOCI	10
-6	PACK	2	8	1
-7	STOR
-8	LODA	0	my_rect
-9	INDL	0	4
-10	LODA	0	my_rect
-11	INDL	4	4
-12	MULI
-13	WRIT	i
-14	HALT
-
-Code size: 14
-
-0	CODE	13
-1	VARS	1
-2	NEWO	4	1
-3	LOCI	5
-4	PUSH	1
-5	JUMP	9
-6	APOP
-7	WRIT	i
-8	HALT
-9	FUNC	double
-10	LODA	1	n
-11	LODA	1	n
-12	ADDI
-13	RETN
