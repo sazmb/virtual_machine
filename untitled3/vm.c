@@ -544,7 +544,7 @@ void exec_pack(int num, int size , int card) {
     void* vars;
     void* concat;
     int concat_size=0;
-    for (int i=0; i<=num; i++)
+    for (int i=0; i<num; i++)
       if(i) {
           int current_size =ostack[op-1].size;
           int current_num =ostack[op-1].num;

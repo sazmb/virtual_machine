@@ -1,11 +1,34 @@
 types
-    rect = { length : int, width : int };
+    num = int;
+    str = string;
 variables
-    my_rect : rect;
+    name : str;
+    id : num;
 run
-    my_rect = { 5, 10 };
-    write my_rect.length * my_rect.width;
+    name = "John";
+    id = 101;
+    write name;
+    write id;
 end
+
+
+Code size: 14
+
+0	CODE	13
+1	VARS	1
+2	NEWO	4	1
+3	LODA	0	name
+4	LOCS	"John"
+5	STOR
+6	LODA	0	id
+7	LOCI	101
+8	STOR
+9	LOAD	0	name
+10	WRIT	s
+11	LOAD	0	id
+12	WRIT	i
+13	HALT
+
 
 Code size: 15
 
@@ -17,10 +40,27 @@ Code size: 15
 5	LOCI	10
 6	PACK	2	8	1
 7	STOR
-8	LOAD	0	my_rect
+8	LODA	0	my_rect
 9	INDL	0	4
-10	LOAD	0	my_rect
+10	LODA	0	my_rect
 11	INDL	4	4
 12	MULI
 13	WRIT	i
 14	HALT
+
+Code size: 14
+
+0	CODE	13
+1	VARS	1
+2	NEWO	4	1
+3	LOCI	5
+4	PUSH	1
+5	JUMP	9
+6	APOP
+7	WRIT	i
+8	HALT
+9	FUNC	double
+10	LODA	1	n
+11	LODA	1	n
+12	ADDI
+13	RETN
