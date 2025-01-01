@@ -45,3 +45,8 @@ non sono sicuro che  il pop funzioni correttamente
 24-- gestione funzione
    i created push and pop to astack but i havent test yet , and neither controlled if they are
    right, neither insert pop in the right place
+
+   i'm not also sure that i'm using the indexing in the right way in the LODA
+
+25-- gestione riaseggnamento degli indirizzi per le funzioni
+    non soono sicuro di utilizzare gli indici nel modo corretto

@@ -1,29 +1,30 @@
-types
-    arr = [int];
 variables
-    numbers : arr;
+    x, y : int;
 run
-     numbers = [1, 2, 3, 4];
-        write numbers[2];
+    x = 3;
+    y = 4;
+    if x + y == 7 then
+        write "Sum is 7";
+    end;
 end
+Code size: 18
 
-Code size: 17
-
-0	CODE	16
+0	CODE	17
 1	VARS	1
-2	NEWO	4	0
-3	LODA	0	numbers
-4	LOCI	1
-5	LOCI	2
-6	LOCI	3
+2	NEWO	4	1
+3	LODA	0	x
+4	LOCI	3
+5	STOR
+6	LODA	0	y
 7	LOCI	4
-8	PACK	4	16	4
-9	STOR
-10	LODA	0	numbers
-11	LOCI	2
-12	CIDX
-13	IXAD	4
-14	INDL	0	4
-15	WRIT	i
-16	HALT
+8	STOR
+9	LOAD	0	x
+10	LOAD	0	y
+11	ADDI
+12	LOCI	7
+13	EQUA
+14	SKPF	3
+15	LOCS	"Sum is 7"
+16	WRIT	s
+17	HALT
 

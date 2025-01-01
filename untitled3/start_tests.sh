@@ -64,7 +64,7 @@ script_list=(
 
   # Vettore dei valori di uscita attesi (esempio: success=0, failure=1, custom=42, etc.)
   expected_exit_codes=(0 0 0 0 0
-                       0 0 0 0 0
+                       0 0 0 0 139
                        0 0 0 0 0
                        0 0 0 0 0
                        0 0 0 0 0

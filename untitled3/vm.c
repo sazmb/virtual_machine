@@ -7,7 +7,7 @@
 #define MAX_OBJECTS 1000000
 int const SIZE_INT=4;
 int const SIZE_REAL=8;
-int const SIZE_STRING=4;
+int const SIZE_STRING=8;
 Pstat prog;
 int pc;
 Object *vars;
@@ -19,6 +19,8 @@ int op=0;
 int ip;
 int ap;
 int is_address;
+int n_var=0;
+char* test_pointer;
 void error(char* msg) {
     printf("%s", msg);
     exit (EXIT_FAILURE);
@@ -69,6 +71,33 @@ char* estrai_sottostringa(const char* sorgente, int inizio, int fine) {
 
     return sottostringa;
 }
+void *reverse_memcpy(void *dest, const void *src, size_t n) {
+    unsigned char *d = (unsigned char *)dest;
+    const unsigned char *s = (const unsigned char *)src;
+
+    // Inizia la copia dall'ultimo byte
+    for (size_t i = 0; i < n; i++) {
+        d[n - 1 - i] = s[n - 1 - i];
+    }
+
+    return dest;
+}
+
+void move_mem(void* start, int offset) {
+
+    reverse_memcpy(start+offset, start, &istack[ip]-start);
+    ip+=offset;
+}
+void reassign_addr ( int offset,int  address) {
+   if(address) {
+       for(int i=vp+1; i<astack[ap-1].param_num;i++)
+           ostack[op-i-1].addr+=offset;
+   }else {
+       for(int i=vp+1; i<n_var;i++)
+           vars[i].addr+=offset;
+   }
+}
+
 void read_simple(int address , char* format) {
     if (strcmp(format, "i")) {
         int i;
@@ -201,8 +230,12 @@ void* pop_val(int size, int num) {
     return val;
 }
 char* pop_string()  {
-  char* s;
-    s = * (char **) &istack[ip - SIZE_STRING];
+
+    //zona sensibile
+    void* temp=malloc(SIZE_STRING);
+    memcpy(temp,&istack[ip - SIZE_STRING],SIZE_STRING);
+    char * s =  * (char **) temp;
+    //char* s = *((char**)((void*)((uintptr_t)temp & 0xFFFFFFFF)));
     pop_obj();
     return s;
 }
@@ -218,13 +251,13 @@ double pop_real(){
     pop_obj();
     return n;
 }
-void push_val(void* val , int dim , int num) {
+void push_val(void* val , int size , int num) {
     Object obj;
-    obj.size = dim;
+    obj.size = size;
     obj.num = num;
     obj.addr = &istack[ip];
-    memcpy(obj.addr, val,dim);
-    ip += dim;
+    memcpy(obj.addr, val,size*num);
+    ip += size*num;
     push_obj(obj);
 }
 void push_int(int n)
@@ -248,6 +281,7 @@ void push_string(char *s) {
     obj.num = 1;
     obj.addr = &istack[ip];
     * (char **) obj.addr = ps;//non funziona non converte l'int in bit ma semplicemente assegna il valore intero a un char che lo legge come ASCII
+    test_pointer=ps;
     ip += SIZE_STRING;
     push_obj(obj);
 
@@ -295,6 +329,8 @@ void write_complex(char *format) {
         }
     }
 }
+
+
 void exec_addi()
 { int n, m;
 
@@ -321,7 +357,7 @@ void exec_card() {
 }
 void exec_cidx() {
      int index=pop_int();
-    if (index>=ostack[op].num)
+    if (index>=ostack[op-1].num)
         error("index out of bound");
     else push_int(index);
 }
@@ -463,19 +499,22 @@ void exec_locs(char* const_s) {
     push_string(const_s);
 }
 void exec_loda(int env ,int oid) {
-    if(!env) {
     Object obj;
+    if(!env) {
+
     obj.size=vars[oid].size;
     obj.num=vars[oid].num;
     obj.addr=vars[oid].addr;
-    push_obj(obj);
+    vp=oid;
 }else {
-    Object obj;
-    obj.size=ostack[astack[ap-1].obj+oid-1].size;
-    obj.num=ostack[astack[ap-1].obj+oid-1].num;
-    obj.addr=ostack[astack[ap-1].obj+oid-1].addr;
+    int index=astack[ap-1].obj+oid-1;
+    obj.size=ostack[index].size;
+    obj.num=ostack[index].num;
+    obj.addr=ostack[index].addr;
+    vp=index;
+}
     push_obj(obj);
-}}
+}
 void exec_lthi() { int n, m;
     n = pop_int();
     m = pop_int();
@@ -561,7 +600,7 @@ void exec_pack(int num, int size , int card) {
           memcpy(concat, pop_val(s, n), s*n);
           concat_size+=s*n;
       }
-    push_val(concat, size,card);
+    push_val(concat, concat_size/card,card);
 }
 void exec_push(int n) {
       Activation_record act;
@@ -600,19 +639,27 @@ void exec_stor() {
     Object obj =ostack[op-1];
     op--;
 
-  /**   //resize if an array or a string and the current dim of var dont match with dim of new value(actually im doing the rizement only
-   *   if the var is smaller)
-      if (obj.size*obj.num<size*num) {
-      int offset =obj.size*obj.num-size*num;
-      for (int i=obj.addr+obj.size*obj.num); i<ip; i++)
-           istack[i]=istack[i+offset];
 
-    }
-    */
 
-       //caso: stringa
+    // caso array ridimensionato (non  viene gestito il caso in cui l'array è un parametro
+    //di una  funzione
+   if (obj.num<num) {
 
-  memcpy(obj.addr,val1,size*num);
+       if (obj.addr==NULL)
+           // caso array non ancora assegnato
+           obj.addr=istack;
+
+       int offset=(num-obj.num)*size;
+       move_mem(obj.addr,offset );
+       reassign_addr(offset, is_address);
+       //vp viene aggiornato ogni volta che un indirizzo viene caricato sulla pila(LODA)
+       // non gestisce il caso vengano caricati due load consecutivi senza stor
+       vars[vp].num=num;
+       vars[vp].size=size;
+       vars[vp].addr=obj.addr;
+   }
+
+        memcpy(obj.addr,val1,size*num);
 }
 void exec_subi() { int n, m;
     n=pop_int();
@@ -640,6 +687,7 @@ void exec_tore() {
 }
 void exec_vars(int num) {
     vars= (Object*) malloc(sizeof (Object)*num);
+    n_var=num;
 }
 void exec_writ(char* format) {
     if (strlen(format)==1)
