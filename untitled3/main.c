@@ -109,7 +109,6 @@ Stat* carica_file(FILE *file) {
                 while ((c = fgetc(file)) != '\n' && c != EOF && j < sizeof(str) - 1) {
                     str[j++] = c;  // Memorizza il carattere nel buffer
                 }
-
                 str[j] = '\0';
                 break;
 
@@ -150,7 +149,7 @@ Stat* carica_file(FILE *file) {
         }
         if (op==READ) {
             arg2.sval= malloc (sizeof(char)*(j+1));
-            arg2.sval=strcpy(arg1.sval, str);
+            arg2.sval=strcpy(arg2.sval, str);
         }
 
         code[i]= crea_stat(addr, op, arg1, arg2, arg3);

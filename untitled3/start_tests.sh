@@ -55,6 +55,26 @@ script_list=(
     "/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_48.txt"
     "/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_49.txt"
     "/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_50.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_51.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_52.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_53.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_54.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_55.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_56.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_57.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_58.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_59.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_60.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_61.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_62.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_63.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_64.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_65.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_66.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_67.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_68.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_69.txt"
+"/mnt/c/Users/samue/desktop/compiler/compiler_project2/pcode_test/pcode_70.txt"
 
 
 
@@ -72,24 +92,40 @@ script_list=(
                        0 0 0 0 0
                        0 0 0 0 0
                        0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 0 0
                        0 0 0 0 0 )
   # Contatore per indicare l'indice corrente del vettore di valori attesi
-    index=0
+# Inizializzazione delle variabili
+index=0
 PRINT_SUCCESS=false
-if [[ "$1" == "-all" ]]; then
+
+# Controlla se i parametri per l'intervallo sono stati passati
+if [[ "$1" == "-ver" ]]; then
     PRINT_SUCCESS=true
+    shift  # Rimuovi -ver dai parametri per non interferire con gli altri
 fi
-# Controlla se il programma C esiste
-if [[ ! -x "$C_PROGRAM" ]]; then
-    echo "Errore: Il programma C non è eseguibile o non esiste."
-    exit 1
-fi
+
+# Verifica se sono stati passati gli estremi del ciclo (due numeri interi)
+if [[ $# -ge 2 ]]; then
+    START_INDEX=$1
+    END_INDEX=$2
+    shift 2  # Rimuove gli estremi passati dalla lista dei parametri
+else
+      START_INDEX=0
+      END_INDEX=$((${#script_list[@]} - 1))
+  fi
 
 # Loop per eseguire ciascuno script Bash e successivamente il programma C
-for script in "${script_list[@]}"; do
+for ((index=$START_INDEX; index<=$END_INDEX; index++)); do
+    script="${script_list[$index]}"
     # Verifica se lo script esiste ed è eseguibile
     if [[ -x "$script" ]]; then
-
+      current_test_number=$((index+1))
+     echo "Eseguendo lo script $current_test_number"
+     echo " "
             # Ottieni l'exit status dell'ultima esecuzione del programma C
             if [ "$1" == "-last" ]; then
              script_output=$(bash "$script")
@@ -108,12 +144,12 @@ for script in "${script_list[@]}"; do
                 fi
             else
               echo "Eseguendo lo script $script"
-              echo "\nERROR: Exit status errato! Atteso: ${expected_exit_codes[$index]}, Ricevuto: $exit_status"
+              echo "ERROR: Exit status errato! Atteso: ${expected_exit_codes[$index]}, Ricevuto: $exit_status"
 
             fi
 
             # Incrementa l'indice per passare al prossimo valore atteso (opzionale, se necessario)
-            ((index++))
+
 
 
 

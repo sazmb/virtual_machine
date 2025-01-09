@@ -94,7 +94,7 @@ void reassign_addr ( int offset,int  address) {
            ostack[op-i-1].addr+=offset;
    }else {
        for(int i=vp+1; i<n_var;i++)
-           vars[i].addr+=offset;
+           vars[i].addr = (void *)((char *)vars[i].addr + offset);
    }
 }
 
@@ -308,6 +308,10 @@ void write_simple(char *format) {
         char* s=pop_string();
         printf("%s",s);
     }
+    if(format[0]=='b') {
+        int i=pop_int();
+        i ? printf("true"):printf("false");
+    }
 
 }
 void write_complex(char *format) {
@@ -318,6 +322,10 @@ void write_complex(char *format) {
         else if (format[i]=='i'){
             int n= *(int*) extract_val(val, i , i+SIZE_INT);
             printf("%d",n);
+        }
+        else if(format[0]=='b') {
+            int b=pop_int();
+            b ? printf("true"):printf("false");
         }
         else if (format[i]=='r'){
             double n = *(double*) extract_val(val, i , i+SIZE_REAL);
@@ -351,9 +359,10 @@ void exec_apop() {
 }// controllare valore di ritorno
 
 void exec_card() {
-    int dim=ostack[op].num;
-    pop_obj();
-    push_int(dim);
+    int num=ostack[op-1].num;
+    int size=ostack[op-1].size;
+    pop_val(size, num);
+    push_int(num);
 }
 void exec_cidx() {
      int index=pop_int();
@@ -630,7 +639,9 @@ void exec_skip(int offset) {
     pc+=offset-1;
 }
 void exec_skpf(int offset) {
-    if(pop_int()) pc+=offset-1;
+    //offset -1 per bilanciare incremento pc che avviene a ogni ciclo
+    //vale per tutte le istr che modificano direttamente il pc
+    if(!pop_int()) pc+=offset-1;
 }
 void exec_stor() {
     int size=ostack[op-1].size;
@@ -639,7 +650,8 @@ void exec_stor() {
     Object obj =ostack[op-1];
     op--;
 
-
+     void* temp=malloc(size*num);
+    memcpy(temp,val1,size*num);
 
     // caso array ridimensionato (non  viene gestito il caso in cui l'array è un parametro
     //di una  funzione
@@ -659,7 +671,7 @@ void exec_stor() {
        vars[vp].addr=obj.addr;
    }
 
-        memcpy(obj.addr,val1,size*num);
+        memcpy(obj.addr,temp,size*num);
 }
 void exec_subi() { int n, m;
     n=pop_int();
@@ -686,7 +698,7 @@ void exec_tore() {
     push_real(n);
 }
 void exec_vars(int num) {
-    vars= (Object*) malloc(sizeof (Object)*num);
+    vars= (Object*) malloc((sizeof (Object))*num);
     n_var=num;
 }
 void exec_writ(char* format) {
@@ -697,6 +709,7 @@ void exec_writ(char* format) {
 }
 
 // Funzione switch per eseguire la funzione corrispondente
+
 void execute(Pstat istr) {
     switch(istr->op) {
         case ADDI: exec_addi(); break;
