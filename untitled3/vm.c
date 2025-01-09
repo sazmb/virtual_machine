@@ -17,8 +17,7 @@ void* istack;
 int vp=0;
 int op=0;
 int ip;
-int ap;
-int is_address;
+int ap=0;
 int n_var=0;
 char* test_pointer;
 void error(char* msg) {
@@ -88,8 +87,8 @@ void move_mem(void* start, int offset) {
     reverse_memcpy(start+offset, start, &istack[ip]-start);
     ip+=offset;
 }
-void reassign_addr ( int offset,int  address) {
-   if(address) {
+void reassign_addr ( int offset,int  is_local) {
+   if(is_local) {
        for(int i=vp+1; i<astack[ap-1].param_num;i++)
            ostack[op-i-1].addr+=offset;
    }else {
@@ -179,7 +178,37 @@ void read_complex(int oid , char* format) {
     //manca la funzione di write cosi faccio un po fatica a leggere
 
 }
+void gestisci_resize(int size, int num, Object obj, void* val)
+{
+    if (obj.addr==NULL)
+    // caso array non ancora assegnato
+        obj.addr=istack;
 
+    int offset=(num-obj.num)*size;
+    move_mem(obj.addr,offset );
+    // passo l'indice della pila degli activation record per sapere se
+    // è un ambiente globale se ap=0
+    // oppure un ambiente locale se ap!=0
+    reassign_addr(offset, ap);
+    //vp viene aggiornato ogni volta che un indirizzo viene caricato sulla pila(LODA)
+    // tiene traccia dell'ultimo indirizzo caricato(funziona anche per funzioni)
+    // nel caso di ambienti locali vp rappresenta l'indice di ostack di dove è il
+    // corrispettivo param
+    // non gestisce il caso vengano caricati due load consecutivi senza stor
+    if (!ap) {
+        vars[vp].num=num;
+        vars[vp].size=size;
+        vars[vp].addr=obj.addr;
+    }
+    else {
+        obj.size=ostack[vp].size;
+        obj.num=ostack[vp].num;
+        obj.addr=ostack[vp].addr;
+    }
+    memcpy(obj.addr,val,size*num);
+
+
+}
 
 /**
  * non ricordo bene ma mi sembra che serva a estrarre il campo di un record
@@ -593,6 +622,10 @@ void exec_pack(int num, int size , int card) {
     void* vars;
     void* concat;
     int concat_size=0;
+    // card è il numero di elementi che compongono l'array e se record vale sempre 1
+    // num è il numero di elementi da impacchettare
+    // size è la dimensione del singolo elemento
+
     for (int i=0; i<num; i++)
       if(i) {
           int current_size =ostack[op-1].size;
@@ -609,7 +642,16 @@ void exec_pack(int num, int size , int card) {
           memcpy(concat, pop_val(s, n), s*n);
           concat_size+=s*n;
       }
-    push_val(concat, concat_size/card,card);
+    if (!(num==0 && size==0 && card==0))
+     push_val(concat, size,card);
+    else {
+
+        Object obj;
+        obj.size = size;
+        obj.num = num;
+        obj.addr = NULL;
+        push_obj(obj);
+    }
 }
 void exec_push(int n) {
       Activation_record act;
@@ -646,32 +688,27 @@ void exec_skpf(int offset) {
 void exec_stor() {
     int size=ostack[op-1].size;
     int num=ostack[op-1].num;
-    void* val1=pop_val(size,num);
-    Object obj =ostack[op-1];
-    op--;
+    // caso normale
+    if (!(size==0 && num==0)) {
+        void* val1=pop_val(size,num);
+        Object obj =ostack[op-1];
+        op--;
 
-     void* temp=malloc(size*num);
-    memcpy(temp,val1,size*num);
+        void* temp=malloc(size*num);
+        memcpy(temp,val1,size*num);
 
-    // caso array ridimensionato (non  viene gestito il caso in cui l'array è un parametro
-    //di una  funzione
-   if (obj.num<num) {
+        // caso array ridimensionato (non  viene gestito il caso in cui l'array è un parametro
+        //di una  funzione
+        if (obj.num<num)
+            gestisci_resize(size, num , obj, temp);
+        else memcpy(obj.addr,temp,size*num);
+    }
+    //caso array[]
+    else {
+            // rimuovo l'oggetto vuoto e il loda sottostante
+            op-=2;
+        }
 
-       if (obj.addr==NULL)
-           // caso array non ancora assegnato
-           obj.addr=istack;
-
-       int offset=(num-obj.num)*size;
-       move_mem(obj.addr,offset );
-       reassign_addr(offset, is_address);
-       //vp viene aggiornato ogni volta che un indirizzo viene caricato sulla pila(LODA)
-       // non gestisce il caso vengano caricati due load consecutivi senza stor
-       vars[vp].num=num;
-       vars[vp].size=size;
-       vars[vp].addr=obj.addr;
-   }
-
-        memcpy(obj.addr,temp,size*num);
 }
 void exec_subi() { int n, m;
     n=pop_int();
