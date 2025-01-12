@@ -96,93 +96,11 @@ void reassign_addr ( int offset,int  is_local) {
            vars[i].addr = (void *)((char *)vars[i].addr + offset);
    }
 }
-
-void read_simple(int address , char* format) {
-    if (strcmp(format, "i")) {
-        int i;
-        scanf("%d",&i );
-        *(int *) vars[address].addr=i;
-    }
-    if (strcmp(format, "r")) {
-        double r;
-        scanf("%lf",&r );
-        *(double *) vars[address].addr=r;
-    }
-    if (strcmp(format, "s")) { // non basta cosi perchè è un puntatore, va salvato in un altro modo
-        char *s;
-        scanf("%s",s );
-
-        * (char**) vars[address].addr=s;
-    }
-}
-void read_complex(int oid , char* format) {
-    char* stringa =malloc(1000);
-    gets(stringa);
-    void* val =NULL;
-    int total_length=0;
-    if (format[0]=='{'  || format[0]=='[')
-        {
-       read_simple(oid , format);
-       }
-
-    //scanf
-
-    for (int i=0;i<strlen(format); i++) {
-        if (format[i]=='{' || format[i]=='}' || format[i]=='['
-        || format[i]==']' ){
-            stringa++; // Consuma anche il newline);
-        }
-        else if (format[i]=='i') {
-            int temp=0;
-            sscanf(stringa, "%d",&temp );
-            if (val==NULL) {
-                val=malloc(sizeof(int));
-                memcpy(val, &temp, 4);
-                total_length+=sizeof(int);
-            }
-            else {
-                void_concat(val, total_length, &temp, sizeof(int) );
-            }
-            stringa = strchr(stringa, ' ') + 1;
-        }
-        else if (format[i]=='r') {
-            double temp=0;
-            sscanf(stringa, "%lf",&temp );
-            if (val==NULL) {
-                val=malloc(sizeof(double));
-                memcpy(val, &temp, 8);
-                total_length+=sizeof(double);
-            }
-            else {
-                void_concat(val, total_length, &temp, sizeof(double) );
-            }stringa = strchr(stringa, ' ') + 1;
-        }
-        /* non sono convinto che funzioni nel modo giusto questo metodo per salvare la str
-         * perchè dovrei aggiungere solo il puntatore alla stringa a val  e poi allocare la
-         *  stringa effetiva da un altra parte
-         */
-        else if (format[i]=='s') {
-            char temp[100];
-            sscanf(stringa, "%s",temp);
-            if (val==NULL) {
-                val=malloc(SIZE_STRING);
-                memcpy(val, temp, SIZE_STRING);
-                total_length+=SIZE_STRING;
-            }
-            else {
-                void_concat(val, total_length, temp, SIZE_STRING );
-            }stringa = strchr(stringa, ' ') + 1;
-        }
-    }
-    mempcpy(vars[oid].addr, val,total_length);
-    //manca la funzione di write cosi faccio un po fatica a leggere
-
-}
 void gestisci_resize(int size, int num, Object obj, void* val)
 {
     if (obj.addr==NULL)
-    // caso array non ancora assegnato
-        obj.addr=istack;
+        // caso array non ancora assegnato
+            obj.addr=istack;
 
     int offset=(num-obj.num)*size;
     move_mem(obj.addr,offset );
@@ -209,6 +127,140 @@ void gestisci_resize(int size, int num, Object obj, void* val)
 
 
 }
+void read_simple(int oid , char* format) {
+    if (strcmp(format, "i")==0) {
+        int i;
+        scanf("%d",&i );
+        *(int *) vars[oid].addr=i;
+    }
+    else if (strcmp(format, "r")==0) {
+        double r;
+        scanf("%lf",&r );
+        *(double *) vars[oid].addr=r;
+    }
+    else if (strcmp(format, "s")==0) { // non basta cosi perchè è un puntatore, va salvato in un altro modo
+        char *s=malloc(100*sizeof(char));
+        scanf("%s",s );
+        * (char**) vars[oid].addr=s;
+
+
+    }
+}
+void read_complex(int oid , char* format) {
+    char* stringa =malloc(100*sizeof(char));
+
+    gets(stringa);
+    int is_record=0;
+    int read_name_field=0;
+    void* val =NULL;
+    int total_length=0;
+    int j=0;
+    int format_length=strlen(format);
+    if (format[0]=='[') {
+        stringa++;
+        j=1;
+
+    }
+      do {
+
+          for (int i=j;i<format_length; i++) {
+              // Consuma anche il newline);
+
+            /*  if (format[i]=='{'  ) {  i=strchr(format, ':')-format; is_record=1;stringa++;}
+              else if ( format[i]==',')  { if (is_record ) i=strchr(format, ':')-format; strchr(format, ',')+1;  }
+               else if (format[i]=='}' ) { stringa=strchr(stringa, '}');is_record=0;}
+               else if (format[i]==':' ) { stringa=strchr(stringa, ':') +1 ;}
+               else if (format[i]==']' ) {
+                   while (stringa[0]!= ',' && stringa[0]!= ']')
+                       stringa++;
+                   if(stringa[0]== ',') stringa++;
+               }
+            */
+              if (format[i]=='{'  ) {   is_record=1; read_name_field=1;stringa=strchr(stringa, '{')+1;}
+              else if ( format[i]==',')  { if (is_record ) read_name_field=1; stringa=strchr(stringa, ',')+1;  }
+              else if (format[i]=='}' ) { stringa=strchr(stringa, '}');is_record=0;}
+              else if (format[i]==':' ) {  if (is_record ) read_name_field=0; stringa=strchr(stringa, ':') +1 ;}
+              else if (format[i]==']' ) {
+                  while (stringa[0]!= ',' && stringa[0]!= ']')
+                      stringa++;
+                  if(stringa[0]== ',') stringa++;
+              }
+              else if (is_record && read_name_field) {
+                   if(format[i]!=stringa[0])
+                      error("i nomi dei campi non coincidono") ;
+                  else stringa++;
+              }
+               else if (format[i]=='i') {
+                  int temp=0;
+                  sscanf(stringa, "%d",&temp );
+                  if (val==NULL) {
+                      val=malloc(sizeof(int));
+                      memcpy(val, &temp, 4);
+                      total_length+=sizeof(int);
+                  }
+                  else {
+                      val=void_concat(val, total_length, &temp, sizeof(int) );
+                      total_length+=sizeof(int);
+                  }
+
+              }
+               else if (format[i]=='r') {
+                  double temp=0;
+                  sscanf(stringa, "%lf",&temp );
+                  if (val==NULL) {
+                      val=malloc(sizeof(double));
+                      memcpy(val, &temp, 8);
+                      total_length+=sizeof(double);
+                  }
+                  else {
+                      val=void_concat(val, total_length, &temp, sizeof(double) );
+                      total_length+=sizeof(double);
+                  }
+              }
+              /* non sono convinto che funzioni nel modo giusto questo metodo per salvare la str
+               * perchè dovrei aggiungere solo il puntatore alla stringa a val  e poi allocare la
+               *  stringa effetiva da un altra parte
+               */
+              else if (format[i]=='s') {
+                  char* temp=malloc(100*sizeof(char));
+                  char ** pointer=malloc(8);
+                  stringa++;
+                  strcpy(temp,stringa);
+                  int index=strchr(stringa,'\"')-stringa;
+                  temp[index]='\0';
+                  pointer=&temp;
+                  if (val==NULL) {
+                      val=malloc(SIZE_STRING);
+                      memcpy(val, &temp, SIZE_STRING);
+                      total_length+=SIZE_STRING;
+                  }
+                  else {
+                      val=void_concat(val, total_length, pointer, SIZE_STRING );
+                      total_length+=SIZE_STRING;
+                  }
+              }
+
+
+          }
+      }while(format[0]=='[' && stringa[0]!=']');
+      if (format[0]=='[') {
+          int size =vars[oid].size;
+          int num =vars[oid].num;
+          int new_num= total_length/size;
+          if (new_num>num) {
+
+              gestisci_resize(size, new_num , vars[oid], val );
+          }
+          else {
+              mempcpy(vars[oid].addr, val,total_length);
+              vars[oid].num=new_num;
+          }
+      }
+       else    mempcpy(vars[oid].addr, val,total_length);
+
+
+}
+
 
 /**
  * non ricordo bene ma mi sembra che serva a estrarre il campo di un record
@@ -310,7 +362,6 @@ void push_string(char *s) {
     obj.num = 1;
     obj.addr = &istack[ip];
     * (char **) obj.addr = ps;//non funziona non converte l'int in bit ma semplicemente assegna il valore intero a un char che lo legge come ASCII
-    test_pointer=ps;
     ip += SIZE_STRING;
     push_obj(obj);
 
@@ -344,27 +395,66 @@ void write_simple(char *format) {
 
 }
 void write_complex(char *format) {
-    void* val=pop_val(ostack[op-1].size, ostack[op-1].num);
-    for (int i=0; i<strlen(format); i++) {
-        if (format[i]=='[' ||  format[i]==',' || format[i]==']' || format[i]=='{' || format[i]=='}')
-            printf("%c",format[i]);
-        else if (format[i]=='i'){
-            int n= *(int*) extract_val(val, i , i+SIZE_INT);
-            printf("%d",n);
+    int size=ostack[op-1].size;
+    int num=ostack[op-1].num;
+    int is_record=0;
+    int write_name_field=0;
+    void* val=pop_val(size, num);
+        for (int j=0; j<num;j++) {
+            int offset=0;
+            for (int i=0; i<strlen(format); i++) {
+                if (j== 0 && format[i]=='[')
+                    printf("%c ",format[i]);
+                else if (j>0 && format[i]=='[')
+                    printf(", ");
+                else if (j==num-1 && format[i]==']')
+                       printf("%c ",format[i]);
+                  else if (  format[i]=='{') {
+                      printf("%c ",format[i]);
+                      is_record=1;
+                      write_name_field=1;
+                  }
+                    else if  (  format[i]=='}') {
+                        is_record=0;
+                        printf("%c ",format[i]);
+                    }else if  (  format[i]==':') {
+                        write_name_field=0;
+                        printf("%c ",format[i]);
+                    }else if  (  format[i]==',') {
+                        write_name_field=1;
+                        printf("%c ",format[i]);
+                    }
+                    else if  (  is_record && write_name_field) {
+
+                        printf("%c",format[i]);
+                    }
+                  else if (format[i]=='i'){
+                        int n= *(int*) extract_val(val, j*size+offset , SIZE_INT);
+                        printf("%d ",n);
+                      offset+=SIZE_INT;
+
+                    }
+                    else if(format[0]=='b') {
+                        int  b= *(int*) extract_val(val, j*size+offset, SIZE_INT);
+                        b ? printf("true "):printf("false ");
+                        offset+=SIZE_INT;
+                    }
+                    else if (format[i]=='r'){
+                        double n = *(double*) extract_val(val, j*size+offset , SIZE_REAL);
+                        printf("%lf ",n);
+                        offset+=SIZE_REAL;
+                    }
+                    else if (format[i]=='s'){
+                        char** p=   extract_val(val, j*size+offset, SIZE_STRING);
+                        char* s=*p;
+                        printf("%s ",s);
+                        offset+=SIZE_STRING;
+                    }
+
+
+            }
         }
-        else if(format[0]=='b') {
-            int b=pop_int();
-            b ? printf("true"):printf("false");
-        }
-        else if (format[i]=='r'){
-            double n = *(double*) extract_val(val, i , i+SIZE_REAL);
-            printf("%lf",n);
-        }
-        else if (format[i]=='s'){
-            char* s =   extract_val(val, i , i+SIZE_STRING);
-            printf("%s",s);
-        }
-    }
+
 }
 
 
@@ -390,7 +480,7 @@ void exec_apop() {
 void exec_card() {
     int num=ostack[op-1].num;
     int size=ostack[op-1].size;
-    pop_val(size, num);
+    if (num) pop_val(size, num); else pop_obj();
     push_int(num);
 }
 void exec_cidx() {
@@ -414,12 +504,24 @@ void exec_conc()  {
     Object obj2=ostack[op-2];
     int dim1=obj1.size*obj1.num;
     int dim2=obj2.size*obj2.num;
-    void* val1= pop_val(obj1.size, obj1.num);
-    void* val2= pop_val(obj2.size,obj2.num);
+    void*  val1=NULL;
+    void*  val2=NULL;
+    if (dim1!=0)  val1= pop_val(obj1.size, obj1.num); else pop_obj();
+    if (dim2!=0)  val2= pop_val(obj2.size,obj2.num); else pop_obj();
     void* newVal=malloc(dim1+dim2);
-    memcpy(&newVal[0],val2,dim2);
-    memcpy(&newVal[dim2-1],val1,dim1);
-    push_val(newVal,obj1.size,dim1+dim2);
+    if (dim1 && dim2) {
+        memcpy(&newVal[0],val2,dim2);
+        memcpy(&newVal[dim2],val1,dim1);
+        push_val(newVal,obj1.size,(dim1+dim2)/obj1.size);
+    }
+    //considerando i due casi in cui si sta concatenando l'array vuoto
+        else if (dim2!=0) {
+        memcpy(&newVal[0],val2,dim2);
+        push_val(newVal,obj1.size,(dim1+dim2)/obj1.size);
+    }   else if (dim1!=0) {
+        memcpy(&newVal[0],val1,dim1);
+        push_val(newVal,obj1.size,(dim1+dim2)/obj1.size);
+    }
 }
 void exec_divi() {
     int n, m;
@@ -434,9 +536,9 @@ void exec_divr() { int n, m;
     m=pop_real();
     push_real((m/n));}
 void exec_empt() {
-    int dim=ostack[op].num;
+    int num=ostack[op].num;
     pop_obj();
-    push_int(dim ? 0 : 1);
+    push_int(num ? 0 : 1);
 }
 void exec_equa() {
     /**
@@ -480,7 +582,7 @@ void exec_gths() {char *n, *m;
     push_int((strcmp(m,n )>0) ? 1: 0);}
 void exec_head() {
     Object obj=ostack[op-1];
-    if(!obj.size)
+    if(!obj.num)
         error("array is empty, cant access to the head");
     void* val=pop_val(obj.size, obj.num);
     void* head=extract_val(val, 0 , obj.size);
@@ -492,8 +594,6 @@ void exec_indl(int offset, int size) {
      *non posso usare direttamente pop_val se no decrementa anche ip
      *devo accedere alla istack tramite l'obj.addr che staa sopra ostack
      */
-    if(!size)
-        error("array is empty, cant access to the head");
     op--;
     void* val=obj.addr;
     void* field=extract_val(val, offset , size);
@@ -534,7 +634,11 @@ void exec_loci(int const_i) {
     push_real(const_r);
 }
 void exec_locs(char* const_s) {
-    push_string(const_s);
+    char* temp=malloc(strlen(const_s));
+    temp=strcpy(temp, const_s);
+    temp[strlen(const_s)-1]='\0';
+   push_string(&temp[1]);
+
 }
 void exec_loda(int env ,int oid) {
     Object obj;
@@ -569,6 +673,8 @@ void exec_memb()   {
     Object obj =ostack[op-1];
 
     int found=1;
+    if (!obj.num)
+        error("stai cercando di applicare op is_member su un array vuoto");
     void* array_val=pop_val(obj.size,obj.num);
     void* val=pop_val(obj.size,1);
     for(int i=0; i<obj.size*obj.num; i+=obj.size)
@@ -619,33 +725,31 @@ void exec_newo(int size ,  int num) {
       vars[vp++]=var;
 }
 void exec_pack(int num, int size , int card) {
-    void* vars;
     void* concat;
     int concat_size=0;
     // card è il numero di elementi che compongono l'array e se record vale sempre 1
     // num è il numero di elementi da impacchettare
     // size è la dimensione del singolo elemento
+    for (int i=0; i<num; i++){
+    if(i) {
+        int current_size =ostack[op-1].size;
+        int current_num =ostack[op-1].num;
 
-    for (int i=0; i<num; i++)
-      if(i) {
-          int current_size =ostack[op-1].size;
-          int current_num =ostack[op-1].num;
-
-          concat=void_concat(pop_val(current_size, current_num), current_size,concat  ,concat_size );
-          concat_size+=current_size*current_num;
-      }
-      else {
-          int s=ostack[op-1].size;
-          int n=ostack[op-1].num;
-          concat_size=0;
-          concat=malloc((s*n));
-          memcpy(concat, pop_val(s, n), s*n);
-          concat_size+=s*n;
-      }
-    if (!(num==0 && size==0 && card==0))
-     push_val(concat, size,card);
+        concat=void_concat(pop_val(current_size, current_num), current_size,concat  ,concat_size );
+        concat_size+=current_size*current_num;
+    }
     else {
-
+        int s=ostack[op-1].size;
+        int n=ostack[op-1].num;
+        concat_size=0;
+        concat=malloc((s*n));
+        memcpy(concat, pop_val(s, n), s*n);
+        concat_size+=s*n;
+    }
+}
+    if (!(num==0 && size==0 && card==0))
+     push_val(concat, size/card,card);
+    else {
         Object obj;
         obj.size = size;
         obj.num = num;
@@ -661,6 +765,7 @@ void exec_push(int n) {
     push_record(act);
 }
 void exec_read(int oid , char * format) {
+    vp=oid;
     if (format[0]!='{' && format[0]!='[')
         read_simple( oid ,  format);
     else read_complex(oid ,format);

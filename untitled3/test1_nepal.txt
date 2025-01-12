@@ -1,50 +1,101 @@
+variables
+rec: { intero : int, stringa : string};
+run
+write "\n record: ";
+read rec;
+write " record: ";
+write  rec;
+end
+[{intero:1,stringa:"sam"},{intero:2,stringa:"samu"}]
+
 variables nums : [int];
-i : int;
 num : int;
 run
-nums = [];
-i = 0;
-while i < 5 do
-    read num;
-    nums = nums ++ [num];
-    i = i + 1;
+nums = [1, 2, 3, 4, 5];
+foreach num in nums do
+    write num * num;
+    write " ";
 end;
-write "Array: ";
-write  nums;
 end
 
-Code size: 33
+Code size: 40
 
-0	CODE	32
+0	CODE	39
 1	VARS	3
+2	NEWO	0	0
+3	NEWO	4	1
+4	NEWO	4	1
+5	LODA	0	nums
+6	LOCI	1
+7	LOCI	2
+8	LOCI	3
+9	LOCI	4
+10	LOCI	5
+11	PACK	5	20	5
+12	STOR
+13	LODA	0	index_1
+14	LOCI	0
+15	STOR
+16	LOAD	0	index_1
+17	LOAD	0	nums
+18	CARD
+19	LTHI
+20	SKPF	19
+21	LODA	0	num
+22	LODA	0	nums
+23	LOAD	0	index_1
+24	IXAD	0
+25	INDL	0	0
+26	STOR
+27	LOAD	0	num
+28	LOAD	0	num
+29	MULI
+30	WRIT	i
+31	LOCS
+32	WRIT	s
+33	LODA	0	index_1
+34	LOAD	0	index_1
+35	LOCI	1
+36	ADDI
+37	STOR
+38	SKIP	-22
+39	HALT
+
 2	NEWO	4	0
 3	NEWO	4	1
 4	NEWO	4	1
 5	LODA	0	nums
-6	PACK	0	0	0
-7	STOR
-8	LODA	0	i
-9	LOCI	0
-10	STOR
-11	LOAD	0	i
-12	LOCI	5
-13	LTHI
-14	SKPF	14
-15	READ	2	i
-16	LODA	0	nums
+6	LOCI	1
+7	LOCI	2
+8	LOCI	3
+9	LOCI	4
+10	LOCI	5
+11	PACK	5	20	5
+12	STOR
+13	LODA	0	index_1
+14	LOCI	0
+15	STOR
+16	LOAD	0	index_1
 17	LOAD	0	nums
-18	LOAD	0	num
-19	PACK	1	4	1
-20	MEMB
-21	STOR
-22	LODA	0	i
-23	LOAD	0	i
-24	LOCI	1
-25	ADDI
+18	CARD
+19	LTHI
+20	SKPF	19
+21	LODA	0	num
+22	LODA	0	nums
+23	LOAD	0	index_1
+24	IXAD	4
+25	INDL	0	4
 26	STOR
-27	SKIP	-16
-28	LOCS	Array:
-29	WRIT	s
-30	LOAD	0	nums
-31	WRIT	[i]
-32	HALT
+27	LOAD	0	num
+28	LOAD	0	num
+29	MULI
+30	WRIT	i
+31	LOCS
+32	WRIT	s
+33	LODA	0	index_1
+34	LOAD	0	index_1
+35	LOCI	1
+36	ADDI
+37	STOR
+38	SKIP	-22
+39	HALT
