@@ -14,6 +14,7 @@ Object *vars;
 Object ostack [MAX_OBJECTS];
 Activation_record astack[MAX_OBJECTS];
 void* istack;
+int current_assign_var[100];
 int vp=0;
 int op=0;
 int ip;
@@ -89,10 +90,10 @@ void move_mem(void* start, int offset) {
 }
 void reassign_addr ( int offset,int  is_local) {
    if(is_local) {
-       for(int i=vp+1; i<astack[ap-1].param_num;i++)
+       for(int i=current_assign_var[vp]+1; i<astack[ap-1].param_num;i++)
            ostack[op-i-1].addr+=offset;
    }else {
-       for(int i=vp+1; i<n_var;i++)
+       for(int i=current_assign_var[vp]+1; i<n_var;i++)
            vars[i].addr = (void *)((char *)vars[i].addr + offset);
    }
 }
@@ -114,14 +115,16 @@ void gestisci_resize(int size, int num, Object obj, void* val)
     // corrispettivo param
     // non gestisce il caso vengano caricati due load consecutivi senza stor
     if (!ap) {
-        vars[vp].num=num;
-        vars[vp].size=size;
-        vars[vp].addr=obj.addr;
+        int index=current_assign_var[vp];
+        vars[index].num=num;
+        vars[index].size=size;
+        vars[index].addr=obj.addr;
     }
     else {
-        obj.size=ostack[vp].size;
-        obj.num=ostack[vp].num;
-        obj.addr=ostack[vp].addr;
+        int index=current_assign_var[vp];
+        obj.size=ostack[index].size;
+        obj.num=ostack[index].num;
+        obj.addr=ostack[index].addr;
     }
     memcpy(obj.addr,val,size*num);
 
@@ -283,6 +286,7 @@ void push_obj(Object obj)
 void push_record(Activation_record act) {
     if(ap == MAX_OBJECTS) error("Activation record stack overflow");
     astack[ap++] = act;
+    vp++; // indice di array di variabili che memoporizzano l'oid dell'ultimo indirizzo caricato con load per gestire resize di varibili
 }
 int total_size(Object obj) {
     return (obj.size * obj.num);
@@ -298,6 +302,7 @@ Activation_record pop_record()
 {
     if(ap == 0)
         error("Pop from empty activation_record stack");
+    vp--;
     /*
      *forse qui devo rimuovere le cose da ostack e quindi poi a cascata anche da istack
     //ip -= total_size(ostack[op-1]);
@@ -530,7 +535,7 @@ void exec_divi() {
     m=pop_int();
     push_int(m/n);
 }
-void exec_divr() { int n, m;
+void exec_divr() { double n, m;
     n=pop_real();
     if (n==0.0) error("division by 0 not allowed");
     m=pop_real();
@@ -647,13 +652,14 @@ void exec_loda(int env ,int oid) {
     obj.size=vars[oid].size;
     obj.num=vars[oid].num;
     obj.addr=vars[oid].addr;
-    vp=oid;
+    current_assign_var[vp]=oid;
+
 }else {
     int index=astack[ap-1].obj+oid-1;
     obj.size=ostack[index].size;
     obj.num=ostack[index].num;
     obj.addr=ostack[index].addr;
-    vp=index;
+    current_assign_var[vp]=index;
 }
     push_obj(obj);
 }
@@ -722,7 +728,7 @@ void exec_newo(int size ,  int num) {
   }else {
       var.addr=NULL;
   }
-      vars[vp++]=var;
+      vars[current_assign_var[vp]++]=var;
 }
 void exec_pack(int num, int size , int card) {
     void* concat;
@@ -765,7 +771,7 @@ void exec_push(int n) {
     push_record(act);
 }
 void exec_read(int oid , char * format) {
-    vp=oid;
+    current_assign_var[vp]=oid;
     if (format[0]!='{' && format[0]!='[')
         read_simple( oid ,  format);
     else read_complex(oid ,format);
