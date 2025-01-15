@@ -541,7 +541,7 @@ void exec_divr() { double n, m;
     m=pop_real();
     push_real((m/n));}
 void exec_empt() {
-    int num=ostack[op].num;
+    int num=ostack[op-1].num;
     pop_obj();
     push_int(num ? 0 : 1);
 }
@@ -587,11 +587,12 @@ void exec_gths() {char *n, *m;
     push_int((strcmp(m,n )>0) ? 1: 0);}
 void exec_head() {
     Object obj=ostack[op-1];
-    if(!obj.num)
-        error("array is empty, cant access to the head");
-    void* val=pop_val(obj.size, obj.num);
-    void* head=extract_val(val, 0 , obj.size);
-    push_val(head, obj.size,1);}
+    if(obj.num){
+
+        void* val=pop_val(obj.size, obj.num);
+        void* head=extract_val(val, 0 , obj.size);
+        push_val(head, obj.size,1);}
+}
 void exec_indl(int offset, int size) {
 
     Object obj =ostack[op-1];
@@ -779,14 +780,19 @@ void exec_read(int oid , char * format) {
 void exec_retn() {
     int size = ostack[op-1].size;
     int num = ostack[op-1].num;
+    Object obj=ostack[op-1];
     //getting the return value
-    void* val=pop_val(size,num);
+    void *val=malloc(size*num);
+    if (num)
+        val=pop_val(size,num);
+    else pop_obj();
+
     //remoction of all local variables and value on the istack and ostack
     for (int i =0; i<astack[ap-1].param_num;i++)
         pop_val(ostack[op-1].size,ostack[op-1].num);
 
     pc=astack[ap-1].ret_addr;
-    push_val(val,size,num);
+   if(num) push_val(val,size,num); else push_obj(obj);
 }
 void exec_skip(int offset) {
     pc+=offset-1;
@@ -829,14 +835,26 @@ void exec_subr() { double n, m;
     n=pop_real();
     m=pop_real();
     push_real(m-n);}
-void exec_tail() {  Object obj;
-    int size=ostack[op].size;
-    int num=ostack[op].num;
+void exec_tail() {
+    Object obj;
+    int size=ostack[op-1].size;
+    int num=ostack[op-1].num;
     if(!size)
-        error("array is empty, cant access to the head");
+        error("array is empty, cant access to the tail");
     void* val=pop_val(size,num);
-    void* tail=extract_val(val, size, size*num);
-    push_val(tail, size, (num-1));}
+    if(num>1){
+
+        void* tail=extract_val(val, size, size*num);
+        push_val(tail, size, (num-1));
+    }
+    else {
+        obj.size=size;
+        obj.num=0;
+        obj.addr=NULL;
+        push_obj(obj);
+    }
+
+}
 void exec_toin() {
     double n=pop_real();
     push_int((int) n);
