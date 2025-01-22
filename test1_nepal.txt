@@ -1,0 +1,61 @@
+Code size: 59
+
+0	CODE	58
+1	VARS	1
+2	NEWO	4	0
+3	LOCS	"Inserisci una sequenza di numeri da ordinare:\n"
+4	WRIT	s
+5	READ	numeri_da_ordinare [i]
+6	LOCS	"Sequenza di numeri ordinata:\n"
+7	WRIT	s
+8	LOAD	0	numeri_da_ordinare
+9	PUSH	1
+10	JUMP	42
+11	APOP
+12	WRIT	[i]
+13	HALT
+14	FUNC	inserisci
+15	LOAD	1	numeri
+16	EMPT
+17	SKPF	4
+18	LOAD	1	n
+19	PACK	1	4	1
+20	SKIP	21
+21	LOAD	1	n
+22	LOAD	1	numeri
+23	HEAD
+24	LEQI
+25	SKPF	6
+26	LOAD	1	n
+27	PACK	1	4	1
+28	LOAD	1	numeri
+29	CONC
+30	SKIP	11
+31	LOAD	1	numeri
+32	HEAD
+33	PACK	1	4	1
+34	LOAD	1	n
+35	LOAD	1	numeri
+36	TAIL
+37	PUSH	2
+38	JUMP	14
+39	APOP
+40	CONC
+41	RETN
+42	FUNC	ordina
+43	LOAD	1	numeri
+44	EMPT
+45	SKPF	3
+46	PACK	0	0	0
+47	SKIP	11
+48	LOAD	1	numeri
+49	HEAD
+50	LOAD	1	numeri
+51	TAIL
+52	PUSH	1
+53	JUMP	42
+54	APOP
+55	PUSH	2
+56	JUMP	14
+57	APOP
+58	RETN

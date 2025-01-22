@@ -1,0 +1,52 @@
+VM
+non sono sicuro che  il pop funzioni correttamente
+2--sistemare la divisione dei reali perchè quel n=0.0 potrebbe non essere troppo efficace
+3-- APOP- non sono sicuro di avere gestito giustp il valore di ritorno
+4-- come gestire gli ambienti locali-- non lo avevo risolto ??NO
+
+
+5V le stringhe non vengono lette correttamente
+6V il caso func nella lettura del pcode sicuramente e sbagliato
+7V non puoi semplicemente assegnare il puntatore ma devi anche copiare il valore
+    quando leggi un value che è una stringa
+8-- sistemare il fatto che nel READ vengono salvate le stringhe tra virgolette: bisongna toglierle
+
+9v rileggi tutto perchè sei piu indietro di quanto credevi, mancano alcune funzionni che non sono
+    sate implementate a partire da exec-code e immagino che tutte le strutture debbano essere inizializzate
+    perchè le ho fatte tutte staticamente per ora
+
+10-- manca la riscalatura nello stor, per cambiare se sto cercando di assegnare un valore piu grande
+    non devo preuccuparmi se ha senso lo fa la symbol table, solo per gli array e per le stringhe va gestito con
+    malloc ,
+    o potrei mettere la pezza che non si può->non posso viene richiesto esplicito di farlo
+
+11-- EXEC read non è completo
+
+12V op non fuziona devi vedere se conviene cambiare LODA o tutto il resto: se metti che quando fanno il pop
+    prendono il valore sotto dovrebbe funzionare(op-1)->ho scelto op-1
+
+13v conversione in binario non funziona studiarla meglio->passato a void
+14V implementare concat void->DEBUGGARE
+15-- e gestire gli array che cambiano di dimensione, bisogna spostarli dall'istack(mi sa che solo nello stor
+        va fatta la riscalatura
+
+16V extract value è da fixare->DEBUGG
+17V non credo che pop val funzioni
+18-- non ho gestito da nessuna parte gli ambienti locali
+19-- uno dei due equal o notequal è sbagliato nel valore che ritorna
+20V mi sa che il cast da char a void e viceversa è sbagliato, code lo ha gia fatto
+21V controllare percè ho aggiunto un argomento a uno degli exec ma non nell main_exec->era IXAD
+22V capire come gestire stringhe
+
+23-- READ method
+  non sono convinto che la lettura delle stringhe funzioni
+  mancano anche i controlli sull'input che ripsetti il format dell read,
+
+24-- gestione funzione
+   i created push and pop to astack but i havent test yet , and neither controlled if they are
+   right, neither insert pop in the right place
+
+   i'm not also sure that i'm using the indexing in the right way in the LODA
+
+25-- gestione riaseggnamento degli indirizzi per le funzioni
+    non soono sicuro di utilizzare gli indici nel modo corretto
